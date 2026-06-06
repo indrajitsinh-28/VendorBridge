@@ -51,7 +51,16 @@ async def update_quotation(db: AsyncSession, quotation_id: uuid.UUID, payload: Q
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only draft quotations can be edited")
     await _ensure_items_belong_to_rfq(db, quotation.rfq_id, [item.rfq_item_id for item in payload.items])
     quotation.notes = payload.notes
-    quotation.items = [QuotationItem(**item.model_dump()) for item in payload.items]
+    existing_items = {item.rfq_item_id: item for item in quotation.items}
+    updated_items = []
+    for item_payload in payload.items:
+        item = existing_items.get(item_payload.rfq_item_id)
+        if item is None:
+            item = QuotationItem(rfq_item_id=item_payload.rfq_item_id)
+        item.unit_price = item_payload.unit_price
+        item.delivery_days = item_payload.delivery_days
+        updated_items.append(item)
+    quotation.items = updated_items
     await db.commit()
     return await get_quotation(db, quotation_id)
 
@@ -64,6 +73,28 @@ async def submit_quotation(db: AsyncSession, quotation_id: uuid.UUID) -> Quotati
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only draft quotations can be submitted")
     quotation.status = QuotationStatus.submitted
     quotation.submitted_at = datetime.now(UTC)
+    await db.commit()
+    return await get_quotation(db, quotation_id)
+
+
+async def accept_quotation(db: AsyncSession, quotation_id: uuid.UUID) -> Quotation | None:
+    quotation = await get_quotation(db, quotation_id)
+    if quotation is None:
+        return None
+    if quotation.status != QuotationStatus.submitted:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only submitted quotations can be accepted")
+    quotation.status = QuotationStatus.accepted
+    await db.commit()
+    return await get_quotation(db, quotation_id)
+
+
+async def reject_quotation(db: AsyncSession, quotation_id: uuid.UUID) -> Quotation | None:
+    quotation = await get_quotation(db, quotation_id)
+    if quotation is None:
+        return None
+    if quotation.status != QuotationStatus.submitted:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Only submitted quotations can be rejected")
+    quotation.status = QuotationStatus.rejected
     await db.commit()
     return await get_quotation(db, quotation_id)
 

@@ -40,6 +40,8 @@ Open `http://127.0.0.1:8000/docs` for the interactive OpenAPI UI.
 - `GET /quotations/{quotation_id}`
 - `PATCH /quotations/{quotation_id}`
 - `PATCH /quotations/{quotation_id}/submit`
+- `PATCH /quotations/{quotation_id}/accept`
+- `PATCH /quotations/{quotation_id}/reject`
 - `GET /rfqs/{rfq_id}/quotations?sort_by=price&order=asc`
 - `POST /purchase-orders/`
 - `GET /purchase-orders/{po_id}`

@@ -1,14 +1,38 @@
 import uuid
 
+from fastapi import HTTPException, status
 from sqlalchemy import Select, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.sql import text
 
 from app.models.rfq import RFQ, RFQItem, RFQStatus, RFQVendor
 from app.schemas.rfq import RFQCreate
 
 
+async def _ensure_user_exists(db: AsyncSession, user_id: uuid.UUID) -> None:
+    exists = await db.scalar(text("SELECT 1 FROM users WHERE id = :user_id"), {"user_id": str(user_id)})
+    if exists is None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="created_by user does not exist")
+
+
+async def _ensure_vendors_exist(db: AsyncSession, vendor_ids: list[uuid.UUID]) -> None:
+    missing_vendor_ids = []
+    for vendor_id in dict.fromkeys(vendor_ids):
+        exists = await db.scalar(text("SELECT 1 FROM vendors WHERE id = :vendor_id"), {"vendor_id": str(vendor_id)})
+        if exists is None:
+            missing_vendor_ids.append(str(vendor_id))
+    if missing_vendor_ids:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"message": "One or more vendors do not exist", "vendor_ids": missing_vendor_ids},
+        )
+
+
 async def create_rfq(db: AsyncSession, payload: RFQCreate) -> RFQ:
+    await _ensure_user_exists(db, payload.created_by)
+    await _ensure_vendors_exist(db, payload.vendor_ids)
     rfq = RFQ(
         title=payload.title,
         description=payload.description,
@@ -18,7 +42,14 @@ async def create_rfq(db: AsyncSession, payload: RFQCreate) -> RFQ:
         vendors=[RFQVendor(vendor_id=vendor_id) for vendor_id in dict.fromkeys(payload.vendor_ids)],
     )
     db.add(rfq)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="RFQ references a user or vendor that does not exist",
+        ) from exc
     return await get_rfq(db, rfq.id)
 
 

@@ -17,10 +17,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    rfq_status = postgresql.ENUM("draft", "open", "closed", "cancelled", name="rfq_status")
-    quotation_status = postgresql.ENUM("draft", "submitted", "accepted", "rejected", name="quotation_status")
-    purchase_order_status = postgresql.ENUM("pending", "confirmed", "delivered", "cancelled", name="purchase_order_status")
-    invoice_status = postgresql.ENUM("draft", "sent", "paid", name="invoice_status")
+    rfq_status = postgresql.ENUM("draft", "open", "closed", "cancelled", name="rfq_status", create_type=False)
+    quotation_status = postgresql.ENUM("draft", "submitted", "accepted", "rejected", name="quotation_status", create_type=False)
+    purchase_order_status = postgresql.ENUM("pending", "confirmed", "delivered", "cancelled", name="purchase_order_status", create_type=False)
+    invoice_status = postgresql.ENUM("draft", "sent", "paid", name="invoice_status", create_type=False)
     rfq_status.create(op.get_bind(), checkfirst=True)
     quotation_status.create(op.get_bind(), checkfirst=True)
     purchase_order_status.create(op.get_bind(), checkfirst=True)

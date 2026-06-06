@@ -41,6 +41,22 @@ async def submit_quotation(quotation_id: uuid.UUID, db: AsyncSession = Depends(g
     return quotation
 
 
+@router.patch("/{quotation_id}/accept", response_model=QuotationRead)
+async def accept_quotation(quotation_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    quotation = await quotation_crud.accept_quotation(db, quotation_id)
+    if quotation is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quotation not found")
+    return quotation
+
+
+@router.patch("/{quotation_id}/reject", response_model=QuotationRead)
+async def reject_quotation(quotation_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    quotation = await quotation_crud.reject_quotation(db, quotation_id)
+    if quotation is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quotation not found")
+    return quotation
+
+
 @comparison_router.get("/{rfq_id}/quotations", response_model=RFQQuotationComparison)
 async def compare_rfq_quotations(
     rfq_id: uuid.UUID,

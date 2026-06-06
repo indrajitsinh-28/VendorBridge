@@ -1,3 +1,4 @@
+from app.models.external import users, vendors
 from app.models.invoice import Invoice, InvoiceItem, InvoiceStatus
 from app.models.purchase_order import POItem, PurchaseOrder, PurchaseOrderStatus
 from app.models.quotation import Quotation, QuotationItem, QuotationStatus
@@ -17,4 +18,6 @@ __all__ = [
     "RFQItem",
     "RFQStatus",
     "RFQVendor",
+    "users",
+    "vendors",
 ]
