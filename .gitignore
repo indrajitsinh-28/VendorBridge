@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+.env
+vendorbridge-backend/.env
+vendorbridge-backend/.venv/
+venv/
+
+*.pdf
+*.xlsx
+.env
+vendorbridge-backend/.env.example
